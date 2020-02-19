@@ -12,9 +12,6 @@
 
 using namespace std;
 
-const unsigned char COLOR_MIN = numeric_limits<unsigned char>().min();
-const unsigned char COLOR_MAX = numeric_limits<unsigned char>().max();
-
 class pnmColor {
 	
 public:
@@ -23,9 +20,12 @@ public:
 	unsigned char green = 0;
 	unsigned char blue = 0;
 
+
 	pnmColor() {
 
 	}
+
+
 
 	pnmColor(const pnmColor& c) {
 		red = c.red;
@@ -47,10 +47,10 @@ public:
 
 	}
 
-	void inverseColor() {
-		red = COLOR_MAX - red;
-		green = COLOR_MAX - green;
-		blue = COLOR_MAX - blue;
+	void inverseColor(unsigned char depth) {
+		red = depth - red;
+		green = depth - green;
+		blue = depth - blue;
 	}
 
 };
@@ -63,26 +63,28 @@ void progresser(size_t & previous_step, size_t & percentage, size_t & step) {
 
 	previous_step = (previous_step + 1) % step;
 	if (previous_step == 0) {
-		cout << "\b\b\b\b\b\b\b";
+		cerr << "\b\b\b\b\b\b\b";
 		for (int mmm = 0; mmm < 3; mmm++) {
 			if (mmm < percentage % 3) {
-				cout << ".";
+				cerr << ".";
 			}
 			else {
-				cout << " ";
+				cerr << " ";
 			}
 		}
 		percentage++;
-		cout << " " << ((percentage < 10) ? " " : "") << percentage << "%";
+		cerr << " " << ((percentage < 10) ? " " : "") << percentage << "%";
 	}
 
 	if (percentage > 99) {
-		cout << "\n";
+		cerr << "\n";
 	}
 
 }
+
 typedef vector<vector<pnmColor *>> pnmMatrix;
 typedef enum {P5, P6} pnmFormat;
+typedef vector<char> chars;
 
 class pnmImage {
 	
@@ -90,10 +92,11 @@ public:
 
 	size_t width = 0; // y
 	size_t height = 0; // x
-	size_t depth = 0; // d
+	size_t depth = 255; // d
 
 	pnmFormat f = P6;
 	pnmMatrix m;
+	chars errorEncounter;
 
 	pnmImage(size_t w, size_t h, pnmColor color = pnmColor(255)) {
 
@@ -120,11 +123,17 @@ public:
 
 	pnmImage(string filename) {
 
-		cout << "READING FILE " << filename << "\n";
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
+		cerr << "READING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "rb");
-		if (file != NULL) {} else {
-			cout << "failed\n";
+		if ((file != NULL)) {} else {
+			cerr << "failed\n";
+			errorEncounter.push_back(1);
+			return;
 		}
 
 		char p1, p2 = ' ';
@@ -138,30 +147,34 @@ public:
 
 		m = pnmMatrix(h, vector<pnmColor *>(w, nullptr));
 
-		cout << "consistency check\n";
+		cerr << "consistency check\n";
 		if (p1 != 'P') {
-			cout << "Format Error.";
+			cerr << "Format Error.";
+			errorEncounter.push_back(1);
 			return;
 		}
 		if ( !((p2 == '5') || (p2 == '6')) ) {
-			cout << "Only P5 and P6 are supported.";
+			cerr << "Only P5 and P6 are supported.";
+			errorEncounter.push_back(1);
 			return;
 		}
 		if (((w == 0) || (h == 0))) {
-			cout << "Empty image.";
+			cerr << "Empty image.";
+			errorEncounter.push_back(1);
 			return;
 		}
 		if (!(d == 255)) {
-			cout << "Depth is not 255.";
+			cerr << "Depth is not 255.";
+			errorEncounter.push_back(1);
 			return;
 		}
-		cout << "ok\n";
+		cerr << "ok\n";
 
 
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cout << "processing...  0%";
+		cerr << "processing...  0%";
 
 		if (p2 == '5') {
 			f = P5;
@@ -189,7 +202,6 @@ public:
 
 					progresser(previous_step, percentage, step);
 
-
 					fread(&r, sizeof(unsigned char), 1, file);
 					fread(&g, sizeof(unsigned char), 1, file);
 					fread(&b, sizeof(unsigned char), 1, file);
@@ -197,6 +209,7 @@ public:
 					pnmColor* t = new pnmColor(r,g,b);
 
 					m[j][i] = t;
+
 				}
 			}
 
@@ -208,12 +221,17 @@ public:
 
 	void print(string filename) {
 
-		cout << "WRITING FILE " << filename << "\n";
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
+		cerr << "WRITING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "wb");
-		if (file != NULL) {}
-		else {
-			cout << "failed\n";
+		if ((file != NULL)) {} else {
+			cerr << "failed\n";
+			errorEncounter.push_back(1);
+			return;
 		}
 
 		switch (f) {
@@ -230,7 +248,7 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cout << "processing...  0%";
+		cerr << "processing...  0%";
 
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
@@ -259,35 +277,39 @@ public:
 	void printToConsole() {
 		switch (f) {
 		case P5:
-			cout << "P5" << "\n";
+			cerr << "P5" << "\n";
 			break;
 		case P6:
-			cout << "P6" << "\n";
+			cerr << "P6" << "\n";
 			break;
 		}
 
-		cout << width << " " << height << "\n" << depth << "\n";
+		cerr << width << " " << height << "\n" << depth << "\n";
 
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
-				cout << (unsigned char)m[j][i]->red << (unsigned char)m[j][i]->green << (unsigned char)m[j][i]->blue;
+				cerr << (unsigned char)m[j][i]->red << (unsigned char)m[j][i]->green << (unsigned char)m[j][i]->blue;
 			}
 		}
 	}
 
 	void inverseColor() {
 
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cout << "INVERSING COLORS...  0%";
+		cerr << "INVERSING COLORS...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
 
 				progresser(previous_step, percentage, step);
 
-				m[i][j]->inverseColor();
+				m[i][j]->inverseColor(depth);
 			}
 		}
 
@@ -295,10 +317,14 @@ public:
 
 	void reflectHorizontal() {
 
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
 		size_t percentage = 0;
 		size_t step = width * height / 100 / 2;
 		size_t previous_step = 0;
-		cout << "REFLECTING HORIZONTALLY...  0%";
+		cerr << "REFLECTING HORIZONTALLY...  0%";
 
 		int line = height / 2;
 		for (int i = 0; i < line; i++) {
@@ -314,10 +340,14 @@ public:
 
 	void reflectVertical() {
 
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
 		size_t percentage = 0;
 		size_t step = width * height / 100 /2;
 		size_t previous_step = 0;
-		cout << "REFLECTING VERTICALLY...  0%";
+		cerr << "REFLECTING VERTICALLY...  0%";
 
 		int line = width / 2;
 		for (int i = 0; i < height; i++) {
@@ -333,12 +363,16 @@ public:
 
 	void clockwise90() {
 
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
 		pnmMatrix newImage = pnmMatrix(width, vector<pnmColor*>(height, nullptr));
 		
 		size_t percentage = 0;
 		size_t step = width * height / 100 ;
 		size_t previous_step = 0;
-		cout << "ROTATING -> 90...  0%";
+		cerr << "ROTATING -> 90...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
@@ -357,12 +391,16 @@ public:
 
 	void counterclockwise90() {
 
+		if (!errorEncounter.empty()) {
+			return;
+		}
+
 		pnmMatrix newImage = pnmMatrix(width, vector<pnmColor*>(height, nullptr));
 
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cout << "ROTATING <- 90...  0%";
+		cerr << "ROTATING <- 90...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
@@ -397,20 +435,12 @@ int main(int argc, char* argv[]) {
 			out = argv[i];
 		}
 		if (i == 3) {
-			mode = stoi( (string) argv[i]);
+			mode = atoi(argv[i]);
 		}
-
 	}
-
-	ifstream fin(in);
-	ofstream fout(out);
-
-	//FILE* file_in = fopen(in.c_str(), "rb");
-	//FILE* file_out = fopen(out.c_str(), "wb");
 
 	pnmImage im(in);
 
-	mode = -1;
 	switch (mode) {
 	case 0:
 		im.inverseColor();
@@ -438,8 +468,12 @@ int main(int argc, char* argv[]) {
 
 	im.print(out);
 	
-	cout << "CLEANING MEMORY\n";
+	cerr << "\nCLEANING MEMORY\n";
 
-	return 0;
+	if (im.errorEncounter.empty()) {
+		return 0;
+	} else {
+		return 1;
+	}
 
 }
