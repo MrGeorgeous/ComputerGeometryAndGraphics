@@ -63,21 +63,21 @@ void progresser(size_t & previous_step, size_t & percentage, size_t & step) {
 
 	previous_step = (previous_step + 1) % step;
 	if (previous_step == 0) {
-		cerr << "\b\b\b\b\b\b\b";
+		cout << "\b\b\b\b\b\b\b";
 		for (int mmm = 0; mmm < 3; mmm++) {
 			if (mmm < percentage % 3) {
-				cerr << ".";
+				cout << ".";
 			}
 			else {
-				cerr << " ";
+				cout << " ";
 			}
 		}
 		percentage++;
-		cerr << " " << ((percentage < 10) ? " " : "") << percentage << "%";
+		cout << " " << ((percentage < 10) ? " " : "") << percentage << "%";
 	}
 
 	if (percentage > 99) {
-		cerr << "\n";
+		cout << "\n";
 	}
 
 }
@@ -127,11 +127,11 @@ public:
 			return;
 		}
 
-		cerr << "READING FILE " << filename << "\n";
+		cout << "READING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "rb");
 		if ((file != NULL)) {} else {
-			cerr << "failed\n";
+			cout << "failed\n";
 			errorEncounter.push_back(1);
 			return;
 		}
@@ -147,34 +147,34 @@ public:
 
 		m = pnmMatrix(h, vector<pnmColor *>(w, nullptr));
 
-		cerr << "consistency check\n";
+		cout << "consistency check\n";
 		if (p1 != 'P') {
-			cerr << "Format Error.";
+			cout << "Format Error.";
 			errorEncounter.push_back(1);
 			return;
 		}
 		if ( !((p2 == '5') || (p2 == '6')) ) {
-			cerr << "Only P5 and P6 are supported.";
+			cout << "Only P5 and P6 are supported.";
 			errorEncounter.push_back(1);
 			return;
 		}
-		if (((w == 0) || (h == 0))) {
-			cerr << "Empty image.";
+		if (((w <= 0) || (h <= 0))) {
+			cout << "Empty image.";
 			errorEncounter.push_back(1);
 			return;
 		}
 		if (!(d == 255)) {
-			cerr << "Depth is not 255.";
+			cout << "Depth is not 255.";
 			errorEncounter.push_back(1);
 			return;
 		}
-		cerr << "ok\n";
+		cout << "ok\n";
 
 
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "processing...  0%";
+		cout << "processing...  0%";
 
 		if (p2 == '5') {
 			f = P5;
@@ -225,11 +225,11 @@ public:
 			return;
 		}
 
-		cerr << "WRITING FILE " << filename << "\n";
+		cout << "WRITING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "wb");
 		if ((file != NULL)) {} else {
-			cerr << "failed\n";
+			cout << "failed\n";
 			errorEncounter.push_back(1);
 			return;
 		}
@@ -248,7 +248,7 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "processing...  0%";
+		cout << "processing...  0%";
 
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
@@ -277,18 +277,18 @@ public:
 	void printToConsole() {
 		switch (f) {
 		case P5:
-			cerr << "P5" << "\n";
+			cout << "P5" << "\n";
 			break;
 		case P6:
-			cerr << "P6" << "\n";
+			cout << "P6" << "\n";
 			break;
 		}
 
-		cerr << width << " " << height << "\n" << depth << "\n";
+		cout << width << " " << height << "\n" << depth << "\n";
 
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
-				cerr << (unsigned char)m[j][i]->red << (unsigned char)m[j][i]->green << (unsigned char)m[j][i]->blue;
+				cout << (unsigned char)m[j][i]->red << (unsigned char)m[j][i]->green << (unsigned char)m[j][i]->blue;
 			}
 		}
 	}
@@ -302,7 +302,7 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "INVERSING COLORS...  0%";
+		cout << "INVERSING COLORS...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
@@ -324,15 +324,15 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100 / 2;
 		size_t previous_step = 0;
-		cerr << "REFLECTING HORIZONTALLY...  0%";
+		cout << "REFLECTING HORIZONTALLY...  0%";
 
-		int line = height / 2;
-		for (int i = 0; i < line; i++) {
-			for (int j = 0; j < width; j++) {
+		int line = width / 2;
+		for (int i = 0; i < height; i++) {
+			for (int j = 0; j < line; j++) {
 
 				progresser(previous_step, percentage, step);
 
-				swap(m[i][j], m[height - i - 1][j]);
+				swap(m[i][j], m[i][width - j - 1]);
 			}
 		}
 
@@ -345,17 +345,17 @@ public:
 		}
 
 		size_t percentage = 0;
-		size_t step = width * height / 100 /2;
+		size_t step = width * height / 100 / 2;
 		size_t previous_step = 0;
-		cerr << "REFLECTING VERTICALLY...  0%";
+		cout << "REFLECTING VERTICALLY...  0%";
 
-		int line = width / 2;
-		for (int i = 0; i < height; i++) {
-			for (int j = 0; j < line; j++) {
+		int line = height / 2;
+		for (int i = 0; i < line; i++) {
+			for (int j = 0; j < width; j++) {
 
 				progresser(previous_step, percentage, step);
 
-				swap(m[i][j], m[i][width - j - 1]);
+				swap(m[i][j], m[height - i - 1][j]);
 			}
 		}
 
@@ -372,7 +372,7 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100 ;
 		size_t previous_step = 0;
-		cerr << "ROTATING -> 90...  0%";
+		cout << "ROTATING -> 90...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
@@ -400,7 +400,7 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "ROTATING <- 90...  0%";
+		cout << "ROTATING <- 90...  0%";
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
@@ -458,22 +458,18 @@ int main(int argc, char* argv[]) {
 		im.counterclockwise90();
 		break;
 	default:
-		//im.inverseColor();
-		//im.reflectHorizontal();
-		//im.reflectVertical();
-		//im.clockwise90();
-		//im.counterclockwise90();
+		return 1;
 		break;
 	}
 
 	im.print(out);
 	
-	cerr << "\nCLEANING MEMORY\n";
+	cout << "\nCLEANING MEMORY\n";
 
-	if (im.errorEncounter.empty()) {
-		return 0;
-	} else {
+	if (!im.errorEncounter.empty()) {
 		return 1;
 	}
+
+	return 0;
 
 }
