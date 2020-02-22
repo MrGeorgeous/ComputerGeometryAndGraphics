@@ -92,9 +92,9 @@ class pnmImage {
 	
 public:
 
-	size_t width = 0; // y
-	size_t height = 0; // x
-	size_t depth = 255; // d
+	int width = 0; // y
+	int height = 0; // x
+	int depth = 255; // d
 
 	pnmFormat f = P6;
 	pnmMatrix m;
