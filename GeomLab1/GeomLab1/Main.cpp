@@ -12,6 +12,8 @@
 
 using namespace std;
 
+const int UCHAR_SIZE = sizeof(unsigned char);
+
 class pnmColor {
 	
 public:
@@ -137,13 +139,19 @@ public:
 		}
 
 		char p1, p2 = ' ';
-		size_t w = 0, h = 0, d = 0;
+		int w = 0, h = 0, d = 0;
 
 		fscanf(file, "%c%c\n%i %i\n%i\n", &p1, &p2, &w, &h, &d);
 
 		width = w;
 		height = h;
 		depth = d;
+
+		if (((w <= 0) || (h <= 0))) {
+			cout << "Empty image.";
+			errorEncounter.push_back(1);
+			return;
+		}
 
 		m = pnmMatrix(h, vector<pnmColor *>(w, nullptr));
 
@@ -155,11 +163,6 @@ public:
 		}
 		if ( !((p2 == '5') || (p2 == '6')) ) {
 			cout << "Only P5 and P6 are supported.";
-			errorEncounter.push_back(1);
-			return;
-		}
-		if (((w <= 0) || (h <= 0))) {
-			cout << "Empty image.";
 			errorEncounter.push_back(1);
 			return;
 		}
@@ -185,7 +188,13 @@ public:
 
 					progresser(previous_step, percentage, step);
 
-					fread(&t, sizeof(unsigned char), 1, file);
+					size_t r = fread(&t, UCHAR_SIZE, 1, file);
+					if (r != UCHAR_SIZE) {
+						cout << "\nFile end was not reached.";
+						errorEncounter.push_back(1);
+						return;
+					}
+
 					m[j][i] = new pnmColor(t);
 				}
 			}
@@ -202,9 +211,16 @@ public:
 
 					progresser(previous_step, percentage, step);
 
-					fread(&r, sizeof(unsigned char), 1, file);
-					fread(&g, sizeof(unsigned char), 1, file);
-					fread(&b, sizeof(unsigned char), 1, file);
+					size_t res = 0;
+					res += fread(&r, UCHAR_SIZE, 1, file);
+					res += fread(&g, UCHAR_SIZE, 1, file);
+					res += fread(&b, UCHAR_SIZE, 1, file);
+
+					if (res != 3 * UCHAR_SIZE) {
+						cout << "\nFile end was not reached.";
+						errorEncounter.push_back(1);
+						return;
+					}
 
 					pnmColor* t = new pnmColor(r,g,b);
 
