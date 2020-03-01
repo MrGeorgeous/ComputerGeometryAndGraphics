@@ -365,17 +365,17 @@ public:
 
 	void bresenham(int x1, int y1, int x2, int y2, int color) {
 
-		int m_new = 2 * (y2 - y1);
-		int slope_error_new = m_new - (x2 - x1);
+		int step = 2 * (y2 - y1);
+		int err = step - (x2 - x1);
 
 		for (int x = x1, y = y1; x <= x2; x++){
 
 			drawBWPoint(x, y, 1, color);
-			slope_error_new += m_new;
+			err += step;
 
-			if (slope_error_new >= 0) {
+			if (err >= 0) {
 				y++;
-				slope_error_new -= 2 * (x2 - x1);
+				err -= 2 * (x2 - x1);
 			}
 		}
 
@@ -400,11 +400,9 @@ public:
 
 	void drawSingularLine(float x0, float y0, float x1, float y1, int lineColor = 0) {
 
-		int lineWidth = 1;
-		//lineColor = 255 - lineColor;
-
-		const bool steep = abs(y1 - y0) > abs(x1 - x0);
-		if (steep) {
+		// Universing the direction
+		const bool incline = abs(y1 - y0) > abs(x1 - x0);
+		if (incline) {
 			std::swap(x0, y0);
 			std::swap(x1, y1);
 		}
@@ -413,22 +411,23 @@ public:
 			std::swap(y0, y1);
 		}
 
+		// getting incline
 		const float dx = x1 - x0;
 		const float dy = y1 - y0;
-		const float gradient = (dx == 0) ? 1 : dy / dx;
+		const float alpha = (dx == 0) ? 1 : dy / dx;
 
 		int xpx11;
 		float intery;
 		{
 
 			const float xend = round(x0);
-			const float yend = y0 + gradient * (xend - x0);
+			const float yend = y0 + alpha * (xend - x0);
 			const float xgap = rfpart(x0 + 0.5);
 
 			const int ypx11 = ipart(yend);
 			xpx11 = int(xend);
 
-			if (steep) {
+			if (incline) {
 				drawBWPoint(ypx11, xpx11, rfpart(yend) * xgap, lineColor);
 				drawBWPoint(ypx11 + 1, xpx11, fpart(yend) * xgap, lineColor);
 			}
@@ -437,17 +436,17 @@ public:
 				drawBWPoint(xpx11, ypx11 + 1, fpart(yend) * xgap, lineColor);
 			}
 
-			intery = yend + gradient;
+			intery = yend + alpha;
 		}
 
 		int xpx12;
 		{
 			const float xend = round(x1);
-			const float yend = y1 + gradient * (xend - x1);
+			const float yend = y1 + alpha * (xend - x1);
 			const float xgap = rfpart(x1 + 0.5);
 			xpx12 = int(xend);
 			const int ypx12 = ipart(yend);
-			if (steep) {
+			if (incline) {
 				drawBWPoint(ypx12, xpx12, rfpart(yend) * xgap, lineColor);
 				drawBWPoint(ypx12 + 1, xpx12, fpart(yend) * xgap, lineColor);
 			}
@@ -457,18 +456,18 @@ public:
 			}
 		}
 
-		if (steep) {
+		if (incline) {
 			for (int x = xpx11 + 1; x < xpx12; x++) {
 				drawBWPoint(ipart(intery), x, rfpart(intery), lineColor);
 				drawBWPoint(ipart(intery) + 1, x, fpart(intery), lineColor);
-				intery += gradient;
+				intery += alpha;
 			}
 		}
 		else {
 			for (int x = xpx11 + 1; x < xpx12; x++) {
 				drawBWPoint(x, ipart(intery), rfpart(intery), lineColor);
 				drawBWPoint(x, ipart(intery) + 1, fpart(intery), lineColor);
-				intery += gradient;
+				intery += alpha;
 			}
 		}
 
