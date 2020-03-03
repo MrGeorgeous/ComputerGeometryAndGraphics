@@ -107,30 +107,7 @@ public:
 
 
 
-void progresser(size_t& previous_step, size_t& percentage, size_t& step) {
 
-	if (percentage >= 100) { return; }
-
-	previous_step = (previous_step + 1) % step;
-	if (previous_step == 0) {
-		cerr << "\b\b\b\b\b\b\b";
-		for (int mmm = 0; mmm < 3; mmm++) {
-			if (mmm < percentage % 3) {
-				cerr << ".";
-			}
-			else {
-				cerr << " ";
-			}
-		}
-		percentage++;
-		cerr << " " << ((percentage < 10) ? " " : "") << percentage << "%";
-	}
-
-	if (percentage > 99) {
-		cerr << "\n";
-	}
-
-}
 
 typedef vector<vector<pnmBWColor*>> pnmMatrix;
 typedef enum { P5, P6 } pnmFormat;
@@ -185,12 +162,10 @@ public:
 			return;
 		}
 
-		cerr << "READING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "rb");
 		if ((file != NULL)) {}
 		else {
-			cerr << "failed\n";
 			errorEncounter.push_back(1);
 			return;
 		}
@@ -205,36 +180,34 @@ public:
 		depth = d;
 
 		if (((w <= 0) || (h <= 0))) {
-			cerr << "Empty image.";
+		
 			errorEncounter.push_back(1);
 			return;
 		}
 
 		m = pnmMatrix(h, vector<pnmBWColor*>(w, nullptr));
 
-		cerr << "consistency check\n";
+
 		if (p1 != 'P') {
-			cerr << "Format Error.";
+
 			errorEncounter.push_back(1);
 			return;
 		}
 		if (!((p2 == '5') )) {
-			cerr << "Only P5 is supported.";
+			
 			errorEncounter.push_back(1);
 			return;
 		}
 		if (!(d == 255)) {
-			cerr << "Depth is not 255.";
+			
 			errorEncounter.push_back(1);
 			return;
 		}
-		cerr << "ok\n";
 
 
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "processing...  0%";
 
 		if (p2 == '5') {
 			f = P5;
@@ -243,11 +216,9 @@ public:
 			for (int j = 0; j < h; j++) {
 				for (int i = 0; i < w; i++) {
 
-					progresser(previous_step, percentage, step);
-
 					size_t r = fread(&t, UCHAR_SIZE, 1, file);
 					if (r != UCHAR_SIZE) {
-						cerr << "\nFile end was not reached.";
+
 						errorEncounter.push_back(1);
 						return;
 					}
@@ -269,12 +240,10 @@ public:
 			return;
 		}
 
-		cerr << "WRITING FILE " << filename << "\n";
 
 		FILE* file = fopen(filename.c_str(), "wb");
 		if ((file != NULL)) {}
 		else {
-			cerr << "failed\n";
 			errorEncounter.push_back(1);
 			return;
 		}
@@ -290,12 +259,9 @@ public:
 		size_t percentage = 0;
 		size_t step = width * height / 100;
 		size_t previous_step = 0;
-		cerr << "processing...  0%";
 
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
-
-				progresser(previous_step, percentage, step);
 
 				if (f == P5) {
 					unsigned char t = m[j][i]->color;
@@ -538,9 +504,8 @@ int main(int argc, char* argv[]) {
 	im.correction(gamma, true);
 	im.print(out);
 
-	cerr << "\nCLEANING MEMORY\n";
-
 	if (!im.errorEncounter.empty()) {
+		cerr << "Some errors encountered.";
 		return 1;
 	}
 
