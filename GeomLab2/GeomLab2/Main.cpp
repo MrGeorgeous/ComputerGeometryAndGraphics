@@ -308,18 +308,49 @@ public:
 			return;
 		}
 
-		for (double i = lineWidth; i > 0; i--) {
-			if (lineWidth <= 1) {
-				drawSingularLine(x0, y0, x1, y1, lineColor * lineWidth);
-			} else {
-				drawSingularLine(x0 /*+ (lineWidth - i)*/, y0 + (lineWidth - i), x1 /*+ (lineWidth - i)*/, y1 + (lineWidth - i), lineColor);
-				if (i != lineWidth) {
-					bresenham(x0 /*+ (lineWidth - i)*/, y0 + (lineWidth - i - 1), x1 /*+ (lineWidth - i)*/, y1 + (lineWidth - i - 1), lineColor);
-				}
+		if (lineWidth <= 1) {
+			drawSingularLine(x0, y0, x1, y1, lineColor * lineWidth);
+			return;
+		}
+
+		float angle = atan((y1 - y0) / (x1 - x0));
+		float c_y = sin(angle);
+		float c_x = cos(angle);
+
+		//x0 -= c_x * lineWidth;
+		//x1 -= c_x * lineWidth;
+		y0 += c_y * lineWidth / 2;
+		y1 += c_y * lineWidth / 2;
+
+		double theEnd = 0.0;
+
+		for (double i = lineWidth; i >= 0; i--) {
+			if (i < 1) {
+				drawSingularLine(x0  /*+ (lineWidth - i)*/, y0 + (lineWidth - i - 1), x1 /*+ (lineWidth - i)*/, y1 + (lineWidth - i - 1), lineColor);
+				theEnd = i;
+				continue;
 			}
 		}
 
+		for (double i = lineWidth; i > 0; i--) {
+
+			if (i == lineWidth) {
+				drawSingularLine(x0 /*+ (lineWidth - i)*/, y0 + (lineWidth - i), x1 /*+ (lineWidth - i)*/, y1 + (lineWidth - i), lineColor);
+				continue;
+			}
+
+			if (i > theEnd) {
+				bresenham(x0 /*+ (lineWidth - i)*/, y0 + (lineWidth - i), x1 /*+ (lineWidth - i)*/, y1 + (lineWidth - i), lineColor);
+			}
+
+
+		}
+
+
+
 	}
+
+	
 
 	void drawBWPoint(int x, int y, double t, float lineColor = 0) {
 		if ((x >= width) || (y >= height) || (x < 0) || (y < 0)) {
@@ -347,28 +378,17 @@ public:
 
 	}
 
-	int ipart(float x) {
-		return int(std::floor(x));
-	}
-
-	float round(float x) {
-		return std::round(x);
-	}
-
-	float fpart(float x) {
-		return x - std::floor(x);
-	}
-
-	float rfpart(float x) {
-		return 1 - fpart(x);
-	}
 
 
 	void drawSingularLine(float x0, float y0, float x1, float y1, int lineColor = 0) {
 
-		// Universing the direction
-		const bool incline = abs(y1 - y0) > abs(x1 - x0);
-		if (incline) {
+		auto ipart = [](float x) -> int {return int(std::floor(x)); };
+		auto round = [](float x) -> float {return std::round(x); };
+		auto fpart = [](float x) -> float {return x - std::floor(x); };
+		auto rfpart = [=](float x) -> float {return 1 - fpart(x); };
+
+		const bool steep = abs(y1 - y0) > abs(x1 - x0);
+		if (steep) {
 			std::swap(x0, y0);
 			std::swap(x1, y1);
 		}
@@ -377,23 +397,19 @@ public:
 			std::swap(y0, y1);
 		}
 
-		// getting incline
 		const float dx = x1 - x0;
 		const float dy = y1 - y0;
-		const float alpha = (dx == 0) ? 1 : dy / dx;
+		const float gradient = (dx == 0) ? 1 : dy / dx;
 
 		int xpx11;
 		float intery;
 		{
-
 			const float xend = round(x0);
-			const float yend = y0 + alpha * (xend - x0);
+			const float yend = y0 + gradient * (xend - x0);
 			const float xgap = rfpart(x0 + 0.5);
-
-			const int ypx11 = ipart(yend);
 			xpx11 = int(xend);
-
-			if (incline) {
+			const int ypx11 = ipart(yend);
+			if (steep) {
 				drawBWPoint(ypx11, xpx11, rfpart(yend) * xgap, lineColor);
 				drawBWPoint(ypx11 + 1, xpx11, fpart(yend) * xgap, lineColor);
 			}
@@ -401,18 +417,17 @@ public:
 				drawBWPoint(xpx11, ypx11, rfpart(yend) * xgap, lineColor);
 				drawBWPoint(xpx11, ypx11 + 1, fpart(yend) * xgap, lineColor);
 			}
-
-			intery = yend + alpha;
+			intery = yend + gradient;
 		}
 
 		int xpx12;
 		{
 			const float xend = round(x1);
-			const float yend = y1 + alpha * (xend - x1);
+			const float yend = y1 + gradient * (xend - x1);
 			const float xgap = rfpart(x1 + 0.5);
 			xpx12 = int(xend);
 			const int ypx12 = ipart(yend);
-			if (incline) {
+			if (steep) {
 				drawBWPoint(ypx12, xpx12, rfpart(yend) * xgap, lineColor);
 				drawBWPoint(ypx12 + 1, xpx12, fpart(yend) * xgap, lineColor);
 			}
@@ -422,18 +437,18 @@ public:
 			}
 		}
 
-		if (incline) {
+		if (steep) {
 			for (int x = xpx11 + 1; x < xpx12; x++) {
 				drawBWPoint(ipart(intery), x, rfpart(intery), lineColor);
 				drawBWPoint(ipart(intery) + 1, x, fpart(intery), lineColor);
-				intery += alpha;
+				intery += gradient;
 			}
 		}
 		else {
 			for (int x = xpx11 + 1; x < xpx12; x++) {
 				drawBWPoint(x, ipart(intery), rfpart(intery), lineColor);
 				drawBWPoint(x, ipart(intery) + 1, fpart(intery), lineColor);
-				intery += alpha;
+				intery += gradient;
 			}
 		}
 
@@ -458,7 +473,7 @@ public:
 int main(int argc, char* argv[]) {
 
 	string fn, in, out;
-	int bw_color = 255;
+	unsigned char bw_color = 255;
 	float width;
 	float x0, y0, x1, y1;
 	float gamma = -1;
@@ -475,32 +490,36 @@ int main(int argc, char* argv[]) {
 			out = argv[i];
 		}
 		if (i == 3) {
-			bw_color = atof(argv[i]);
+			bw_color = atoi(argv[i]);
 		}
 		if (i == 4) {
 			width = atof(argv[i]);
 		}
 		if (i == 5) {
-			x0 = atof(argv[i]) - 1;
+			x0 = atof(argv[i]);
 		}
 		if (i == 6) {
-			y0 = atof(argv[i]) - 1;
+			y0 = atof(argv[i]);
 		}
 		if (i == 7) {
-			x1 = atof(argv[i]) - 1;
+			x1 = atof(argv[i]);
 		}
 		if (i == 8) {
-			y1 = atof(argv[i]) - 1;
+			y1 = atof(argv[i]);
 		}
 		if (i == 9) {
 			gamma = atof(argv[i]);
 		}
 	}
 
+	srgbEncode(bw_color);
+
 
 	pnmImage im(in);
 	im.correction(gamma, false);
 	im.drawLine(x0, y0, x1, y1, bw_color, width);
+
+
 	im.correction(gamma, true);
 	im.print(out);
 
