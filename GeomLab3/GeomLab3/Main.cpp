@@ -594,20 +594,20 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Testing all modes and bits
-	for (int i = 1; i <= 7; i++) {
+	//for (int i = 1; i <= 7; i++) {
 
-		for (int j = 1; j <= 8; j++) {
-			pnmBWImage im(in, gamma);
-			im.dither(i, j);
-			im.print("pics/" + to_string(i) + "_bit" + to_string(j) + "_" + out);
+	//	for (int j = 1; j <= 8; j++) {
+	//		pnmBWImage im(in, gamma);
+	//		im.dither(i, j);
+	//		im.print("pics/" + to_string(i) + "_bit" + to_string(j) + "_" + out);
 
-			if (!im.errorEncounter.empty()) {
-				cerr << "Some errors encountered.";
-				return 1;
-			}
-		}
+	//		if (!im.errorEncounter.empty()) {
+	//			cerr << "Some errors encountered.";
+	//			return 1;
+	//		}
+	//	}
 
-	}
+	//}
 
 	return 0;
 
