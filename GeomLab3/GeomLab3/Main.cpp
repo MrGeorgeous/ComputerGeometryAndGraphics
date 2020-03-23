@@ -26,6 +26,8 @@ class pnmBWColor {
 public:
 
 	unsigned char color = 0;
+	double quantation_error = 0.0;
+	//double color = 0;
 
 	pnmBWColor() {
 
@@ -287,23 +289,46 @@ public:
 		}
 	}
 
-	void copyColorPlus(int i, int j, int value) {
-		if ((0 <= j) && (j < width)) {
-			if ((0 <= i) && (i < height)) {
-				copy[i][j]->color += value;
+	// x и y
+	void copyColorPlus(int j, int i, double value) {
+		if ((0 <= i) && (i < width)) {
+			if ((0 <= j) && (j < height)) {
+				copy[j][i]->quantation_error += value;
 			}
 		}
 	}
 
 	int bit = 8;
 
-	unsigned char nextColor(unsigned char color) {
-		return min(color + pow(2, 8 - bit), 255.0);
+	bool getBit(unsigned char byte, int position) {
+		return (byte >> position) & 1U;
 	}
 
-	unsigned char prevColor(unsigned char color) {
-		return max(color - pow(2, 8 - bit), 0.0);
+	void setBit(unsigned char& byte, int position, bool value) {
+		byte ^= (-value ^ byte) & (1UL << position);
 	}
+
+	unsigned char threshold(int color) {
+		if (color > 255) {
+			color = 255;
+		}
+		if (color < 0) {
+			color = 0;
+		}
+		unsigned char c = color;
+		for (int i = 0; i < (8 - bit); i++) {
+			setBit(c, i, getBit(color, 8 - bit + (i % bit)));
+		}
+		return c;
+	}
+
+	//unsigned char nextColor(unsigned char color) {
+	//	return min(color + pow(2, 8 - bit), 255.0);
+	//}
+
+	//unsigned char prevColor(unsigned char color) {
+	//	return max(color - pow(2, 8 - bit), 0.0);
+	//}
 
 
 	void dither(int mode = 0, int b = 8) {
@@ -318,7 +343,7 @@ public:
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
 				//cout << int(m[i][j]->color) << " ";
-				m[i][j]->color = 255 * round((m[i][j]->color) * float(float(pow(2, bit) - 1) / 255.0)) / (pow(2, bit) - 1);
+				//m[i][j]->color = 255 * round((m[i][j]->color) * float(float(pow(2, bit) - 1) / 255.0)) / (pow(2, bit) - 1);
 				//cout << int(m[i][j]->color) << "\n";
 				copy[i][j] = new pnmBWColor(m[i][j]->color);
 			}
@@ -366,25 +391,39 @@ public:
 		const int order = 8;
 
 		intMatrix pattern = {
-			{0, 194, 48, 242, 12, 206, 60, 255},
-			{129, 64, 178, 113, 141, 76, 190, 125},
-			{32, 226, 16, 210, 44, 238, 28, 222},
-			{161, 97, 145, 80, 174, 109, 157, 93},
-			{8, 202, 56, 250, 4, 198, 52, 246},
-			{137, 72, 186, 121, 133, 68, 182, 117},
-			{40, 234, 24, 218, 36, 230, 20, 214},
-			{170, 105, 153, 89, 165, 101, 149, 85},
+			{0, 48, 12, 12, 60, 3, 51, 15, 63},
+			{32, 16, 44, 28, 35, 19, 47, 31},
+			{8, 56, 4, 52, 11, 59, 7, 55},
+			{40, 24, 36, 20, 43, 27, 39, 23},
+			{2, 50, 14, 62, 1, 49, 13, 61},
+			{34, 18, 46, 30, 33, 17, 45, 29},
+			{10, 58, 6, 54, 9, 57, 5, 53},
+			{42, 26, 38, 22, 41, 25, 37, 21},
 		};
+
+		for (auto& v : pattern) {
+			for (auto& u : v) {
+				u = /* (pow(2, bit) - 1) **/ 255 * ((double(u) / 64.0) - 0.5);
+				//cout << u << " ";
+			}
+		}
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				int threshold = pattern[i % order][j % order];
-				if (m[j][i]->color > threshold) {
+
+				unsigned char mapKey = pattern[i % order][j % order];
+
+				//cout << int(copy[j][i]->color) << "=" << int(threshold(int(copy[j][i]->color) + int(mapKey))) << "; ";
+				//return;
+
+				copy[j][i]->setColor(threshold(int(copy[j][i]->color) + int(mapKey)));
+				
+				/*if (m[j][i]->color > threshold) {
 					copy[j][i]->setColor(nextColor(copy[j][i]->color));
 				}
 				else {
 					copy[j][i]->setColor(prevColor(copy[j][i]->color));
-				}
+				}*/
 			}
 		}
 
@@ -394,13 +433,17 @@ public:
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				int threshold = rand() % 256;
-				if (m[j][i]->color > threshold) {
-					copy[j][i]->setColor(nextColor(copy[j][i]->color));
-				}
-				else {
-					copy[j][i]->setColor(prevColor(copy[j][i]->color));
-				}
+
+				unsigned char mapKey = rand() % 256 - 128;
+				copy[j][i]->setColor(threshold(copy[j][i]->color + mapKey));
+				
+				//int threshold = rand() % 256;
+				//if (m[j][i]->color > threshold) {
+				//	copy[j][i]->setColor(nextColor(copy[j][i]->color));
+				//}
+				//else {
+				//	copy[j][i]->setColor(prevColor(copy[j][i]->color));
+				//}
 			}
 		}
 
@@ -408,16 +451,18 @@ public:
 
 	void ditherFloydSteinberg() {
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++) {
+
 
 				//unsigned char c = m[j][i]->color;
 				//copy[j][i]->color = round(c / 256);
 				//int quant_error = c - copy[j][i]->color;
 
-				unsigned char c = m[j][i]->color;
-				copy[j][i]->color = round(m[j][i]->color / 256);
-				int quant_error = m[j][i]->color - round(m[j][i]->color / 256);
+				unsigned char oldPixel = copy[j][i]->color;
+				unsigned char newPixel = threshold(double(oldPixel) + copy[j][i]->quantation_error);
+				copy[j][i]->setColor(newPixel);
+				double quant_error = oldPixel - newPixel;
 
 				copyColorPlus(j, i + 1, quant_error * 7 / 16);
 				copyColorPlus(j + 1, i, quant_error * 5 / 16);
@@ -431,11 +476,14 @@ public:
 
 	void ditherJarvisJudiceNinke() {
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++) {
 
-				copy[j][i]->color = round(m[j][i]->color / 256);
-				int quant_error = m[j][i]->color - round(m[j][i]->color / 256);
+
+				unsigned char oldPixel = copy[j][i]->color;
+				unsigned char newPixel = threshold(double(oldPixel) + copy[j][i]->quantation_error);
+				copy[j][i]->setColor(newPixel);
+				double quant_error = oldPixel - newPixel;
 
 				copyColorPlus(j, i + 1, quant_error * 7 / 48);
 				copyColorPlus(j, i + 2, quant_error * 5 / 48);
@@ -457,11 +505,18 @@ public:
 
 	void ditherSierra() {
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++) {
 
-				copy[j][i]->color = round(m[j][i]->color / 256);
-				int quant_error = m[j][i]->color - round(m[j][i]->color / 256);
+
+				//unsigned char c = m[j][i]->color;
+				//copy[j][i]->color = round(c / 256);
+				//int quant_error = c - copy[j][i]->color;
+
+				unsigned char oldPixel = copy[j][i]->color;
+				unsigned char newPixel = threshold(double(oldPixel) + copy[j][i]->quantation_error);
+				copy[j][i]->setColor(newPixel);
+				double quant_error = oldPixel - newPixel;
 
 				copyColorPlus(j, i + 1, quant_error * 5 / 32);
 				copyColorPlus(j, i + 2, quant_error * 3 / 32);
@@ -481,11 +536,13 @@ public:
 
 	void ditherAtkinson() {
 
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
+		for (int j = 0; j < height; j++) {
+			for (int i = 0; i < width; i++) {
 
-				copy[j][i]->color = round(m[j][i]->color / 256);
-				int quant_error = m[j][i]->color - round(m[j][i]->color / 256);
+				unsigned char oldPixel = copy[j][i]->color;
+				unsigned char newPixel = threshold(double(oldPixel) + copy[j][i]->quantation_error);
+				copy[j][i]->setColor(newPixel);
+				double quant_error = oldPixel - newPixel;
 
 				copyColorPlus(j, i + 1, quant_error * 1 / 8);
 				copyColorPlus(j, i + 2, quant_error * 1 / 8);
@@ -513,20 +570,25 @@ public:
 
 		for (auto &v : pattern) {
 			for (auto &u : v) {
-				u = u * 256 / 17;
+				u = 255 * (double(u) / 16.0 - 0.5);
 			}
 		}
 
 
 			for (int i = 0; i < width; i++) {
 				for (int j = 0; j < height; j++) {
-					int threshold = pattern[i % order][j % order];
-					if (m[j][i]->color > threshold) {
-						copy[j][i]->setColor(nextColor(copy[j][i]->color));
-					}
-					else {
-						copy[j][i]->setColor(prevColor(copy[j][i]->color));
-					}
+
+					unsigned char mapKey = pattern[i % order][j % order];
+					copy[j][i]->setColor(threshold(copy[j][i]->color + mapKey));
+
+
+					//int threshold = pattern[i % order][j % order];
+					//if (m[j][i]->color > threshold) {
+					//	copy[j][i]->setColor(nextColor(copy[j][i]->color));
+					//}
+					//else {
+					//	copy[j][i]->setColor(prevColor(copy[j][i]->color));
+					//}
 				}
 			}
 
@@ -552,7 +614,7 @@ int main(int argc, char* argv[]) {
 
 	string fn = "", in = "lena512.pgm", out = "lena.pgm";
 
-	float gamma = -1;
+	float gamma = 2.2;
 	int gradient = 0;
 	int mode = 0;
 	int bit = 8;
@@ -582,6 +644,17 @@ int main(int argc, char* argv[]) {
 	}
 
 	pnmBWImage im(in, gamma);
+
+	//gamma = 1;
+	//im.bit = 1;
+	//cout << int(im.threshold(0)) << " ";
+	//cout << int(im.threshold(50)) << " ";
+	//cout << int(im.threshold(100)) << " ";
+	//cout << int(im.threshold(150)) << " ";
+	//cout << int(im.threshold(200)) << " ";
+	//cout << int(im.threshold(255)) << " ";
+	//return 0;
+
 	if (gradient == 1) {
 		im.horizontalGradient();
 	}
@@ -594,10 +667,12 @@ int main(int argc, char* argv[]) {
 	}
 
 	// Testing all modes and bits
-	//for (int i = 1; i <= 7; i++) {
+	//gamma = 1.0;
+	//for (int i = 0; i <= 7; i++) {
 
 	//	for (int j = 1; j <= 8; j++) {
 	//		pnmBWImage im(in, gamma);
+	//		im.horizontalGradient();
 	//		im.dither(i, j);
 	//		im.print("pics/" + to_string(i) + "_bit" + to_string(j) + "_" + out);
 
