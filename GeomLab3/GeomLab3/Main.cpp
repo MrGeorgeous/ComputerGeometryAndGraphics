@@ -282,7 +282,7 @@ public:
 
 	void horizontalGradient() {
 		for (int i = 0; i < width; i++) {
-			unsigned char c = round(255 * i / width);
+			unsigned char c = round(255 * double(i) / double(width - 1.0));
 			for (int j = 0; j < height; j++) {
 				m[j][i]->setColor(c);
 			}
