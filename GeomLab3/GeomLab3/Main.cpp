@@ -51,11 +51,12 @@ public:
 		color = depth - color;
 	}
 
-	
+
 	void gamma(double gamma = 1, size_t depth = 255, bool reverse = false) {
 		if (!reverse) {
 			gammaDecode(color, gamma, depth);
-		} else {
+		}
+		else {
 			gammaEncode(color, gamma, depth);
 		}
 	}
@@ -64,7 +65,8 @@ public:
 
 		if (!reverse) {
 			srgbDecode(color, depth);
-		} else {
+		}
+		else {
 			srgbEncode(color, depth);
 		}
 
@@ -277,61 +279,9 @@ protected:
 public:
 
 
+	
+
 	int bit = 8;
-
-	void horizontalGradient(int b = 8) {
-		bit = b;
-		for (int i = 0; i < width; i++) {
-			unsigned char c = round(255 * double(i) / double(width - 1.0));
-			for (int j = 0; j < height; j++) {
-				m[j][i]->setColor(threshold(c));
-			}
-		}
-	}
-
-	// x и y
-	void copyColorPlus(int j, int i, double value) {
-		if ((0 <= i) && (i < width)) {
-			if ((0 <= j) && (j < height)) {
-				double v = double(m[j][i]->color + value);
-				if (v < 0.0) {
-					m[j][i]->setColor(0.0);
-					return;
-				}
-				if (v > 255.0) {
-					m[j][i]->setColor(255.0);
-					return;
-				}
-				m[j][i]->setColor(v);
-			}
-		}
-	}
-
-
-	bool getBit(unsigned char byte, int position) {
-		return (byte >> position) & 1U;
-	}
-
-	void setBit(unsigned char& byte, int position, bool value) {
-		byte ^= (-value ^ byte) & (1UL << position);
-	}
-
-	double threshold(double color) {
-		color = round(color);
-		if (color > 255.0) {
-			color = 255;
-		}
-		if (color < 0.0) {
-			color = 0;
-		}
-		unsigned char c = int(color);
-		double diff = color - c;
-		for (int i = 0; i < (8 - bit); i++) {
-			setBit(c, i, getBit(color, 8 - bit + (i % bit)));
-		}
-		return double(c) + diff;
-	}
-
 
 	void dither(int mode = 0, int b = 8) {
 
@@ -376,11 +326,127 @@ public:
 
 	}
 
+
+	void horizontalGradient() {
+		for (int i = 0; i < width; i++) {
+			double c = 255 * double(i) / double(width - 1.0);
+			for (int j = 0; j < height; j++) {
+				m[j][i]->setColor(threshold(c));
+			}
+		}
+	}
+
+	void horizontalGradient8bit() {
+		for (int i = 0; i < width; i++) {
+			double c = 255 * double(i) / double(width - 1.0);
+			for (int j = 0; j < height; j++) {
+				m[j][i]->setColor(round(c));
+			}
+		}
+	}
+
+	// x и y
+	void copyColorPlus(int j, int i, double value) {
+		if ((0 <= i) && (i < width)) {
+			if ((0 <= j) && (j < height)) {
+				double v = double(m[j][i]->color + value);
+				if (v < 0.0) {
+					m[j][i]->setColor(0.0);
+					return;
+				}
+				if (v > 255.0) {
+					m[j][i]->setColor(255.0);
+					return;
+				}
+				m[j][i]->setColor(v);
+			}
+		}
+	}
+
+
+	bool getBit(unsigned char byte, int position) {
+		return (byte >> position) & 1U;
+	}
+
+	void setBit(unsigned char& byte, int position, bool value) {
+		byte ^= (-value ^ byte) & (1UL << position);
+	}
+
+
+	double threshold(double color) {
+		if (color >= 255.0) {
+			color = 255;
+			return 255;
+		}
+		if (color <= 0.0) {
+			color = 0;
+			return 0;
+		}
+
+
+		unsigned char c = int(color);
+
+		if (bit == 8) {
+			return round(color);
+		}
+
+		if (bit == 2) {
+			setBit(c, 0, getBit(color, 6));
+			setBit(c, 1, getBit(color, 7));
+			setBit(c, 2, getBit(color, 6));
+			setBit(c, 3, getBit(color, 7));
+			setBit(c, 4, getBit(color, 6));
+			setBit(c, 5, getBit(color, 7));
+		}
+
+		if (bit == 3) {
+			setBit(c, 0, getBit(color, 6));
+			setBit(c, 1, getBit(color, 7));
+			setBit(c, 2, getBit(color, 5));
+			setBit(c, 3, getBit(color, 6));
+			setBit(c, 4, getBit(color, 7));
+		}
+
+		if (bit == 4) {
+			setBit(c, 0, getBit(color, 4));
+			setBit(c, 1, getBit(color, 5));
+			setBit(c, 2, getBit(color, 6));
+			setBit(c, 3, getBit(color, 7));
+		}
+
+		if (bit == 5) {
+			setBit(c, 0, getBit(color, 5));
+			setBit(c, 1, getBit(color, 6));
+			setBit(c, 2, getBit(color, 7));
+		}
+
+		if (bit == 6) {
+			setBit(c, 0, getBit(color, 6));
+			setBit(c, 1, getBit(color, 7));
+		}
+
+		if (bit == 7) {
+			setBit(c, 0, getBit(color, 7));
+		}
+
+		if (bit == 1) {
+			if (color <= 127) {
+				return 0;
+			} else {
+				return 255;
+			}
+		}
+
+		return c;
+	}
+
+
 	void dither0() {
 
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
 				m[j][i]->setColor(threshold(m[j][i]->color));
+				//cout << int(m[j][i]->color) << " ";
 			}
 		}
 
@@ -393,7 +459,7 @@ public:
 
 		for (auto& v : pattern) {
 			for (auto& u : v) {
-				u =  255.0 * ((u + 1.0) / double(order * order) - 0.5) / double(bit);
+				u = 255.0 * ((u) / double(order * order) - 0.5) / double(bit);
 			}
 		}
 
@@ -536,7 +602,7 @@ public:
 
 	}
 
-	
+
 	void ditherHalftone() {
 
 		const int order = 4;
@@ -601,7 +667,7 @@ int main(int argc, char* argv[]) {
 	pnmBWImage im(in, gamma);
 
 	if (gradient == 1) {
-		im.horizontalGradient();
+		im.horizontalGradient8bit();
 	}
 
 	im.dither(mode, bit);
@@ -612,13 +678,26 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+
+	//pnmBWImage im2(in, 1);
+	//for (int i = 0; i < 256; i++) {
+	//	cout << i << " ||| ";
+	//	for (int j = 1; j <= 8; j++) {
+	//		im2.bit = j;
+	//		cout << im2.threshold(i) << " ";
+	//	}
+	//	cout << "\n";
+	//}
+
+
 	// Testing all modes and bits
 	//gamma = 1.0;
 	//for (int i = 0; i <= 7; i++) {
 
 	//	for (int j = 1; j <= 8; j++) {
 	//		pnmBWImage im(in, gamma);
-	//		im.horizontalGradient(8);
+
+	//		im.horizontalGradient8bit();
 	//		im.dither(i, j);
 	//		im.print("pics/" + to_string(i) + "_bit" + to_string(j) + "_" + out);
 
