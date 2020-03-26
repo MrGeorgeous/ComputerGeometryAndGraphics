@@ -475,7 +475,7 @@ public:
 	void ditherOrdered8x8() {
 
 		doubleMatrix pattern = {
-			{0, 48, 12, 12, 60, 3, 51, 15, 63},
+			{0, 48, 12, 60, 3, 51, 15, 63},
 			{32, 16, 44, 28, 35, 19, 47, 31},
 			{8, 56, 4, 52, 11, 59, 7, 55},
 			{40, 24, 36, 20, 43, 27, 39, 23},
@@ -635,7 +635,7 @@ int main(int argc, char* argv[]) {
 
 	string fn = "", in = "lena512.pgm", out = "lena.pgm";
 
-	float gamma = 2.2;
+	float gamma = -1;
 	int gradient = 0;
 	int mode = 0;
 	int bit = 8;
