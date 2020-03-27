@@ -122,7 +122,8 @@ public:
 	int width = 0; // y
 	int height = 0; // x
 	int depth = 255; // d
-	int gamma = -1; // gamma
+	double gamma = 2.2; // gamma
+	bool srgb = false;
 
 	pnmMatrix m;
 	chars errorEncounter;
@@ -153,7 +154,7 @@ public:
 
 	}
 
-	pnmBWImage(string filename, int g = -1) {
+	pnmBWImage(string filename, double g = 2.2) {
 
 		if (!errorEncounter.empty()) {
 			return;
@@ -208,8 +209,12 @@ public:
 		}
 
 		fclose(file);
-
-		correction(gamma, false);
+		
+		if (g == -1) {
+			srgb = true;
+		}
+		gamma = g;
+		correction(false);
 
 	}
 
@@ -219,7 +224,7 @@ public:
 			return;
 		}
 
-		correction(gamma, true);
+		correction(true);
 
 		FILE* file = fopen(filename.c_str(), "wb");
 		if (!(file != NULL)) {
@@ -246,7 +251,7 @@ public:
 
 	unsigned char colorToCurrentScheme(unsigned char c) {
 		pnmBWColor color(c);
-		if (gamma == -1) {
+		if (srgb) {
 			color.srgb(depth, true);
 		}
 		else {
@@ -256,7 +261,7 @@ public:
 	}
 
 protected:
-	void correction(double g = -1, bool reverse = false) {
+	void correction(bool reverse = false) {
 
 		if (!errorEncounter.empty()) {
 			return;
@@ -264,11 +269,11 @@ protected:
 
 		for (int i = 0; i < height; i++) {
 			for (int j = 0; j < width; j++) {
-				if (g == -1) {
+				if (srgb) {
 					m[i][j]->srgb(depth, reverse);
 				}
 				else {
-					m[i][j]->gamma(g, depth, reverse);
+					m[i][j]->gamma(gamma, depth, reverse);
 				}
 			}
 		}
@@ -279,7 +284,7 @@ protected:
 public:
 
 
-	
+
 
 	int bit = 8;
 
@@ -432,7 +437,8 @@ public:
 		if (bit == 1) {
 			if (color <= 127) {
 				return 0;
-			} else {
+			}
+			else {
 				return 255;
 			}
 		}
@@ -635,7 +641,7 @@ int main(int argc, char* argv[]) {
 
 	string fn = "", in = "lena512.pgm", out = "lena.pgm";
 
-	float gamma = -1;
+	float gamma = 2.2;
 	int gradient = 0;
 	int mode = 0;
 	int bit = 8;
@@ -662,6 +668,10 @@ int main(int argc, char* argv[]) {
 		if (i == 6) {
 			gamma = atof(argv[i]);
 		}
+	}
+
+	if (gamma == 0) {
+		gamma = -1;
 	}
 
 	pnmBWImage im(in, gamma);
