@@ -507,8 +507,8 @@ public:
 
 		if (count == Three) {
 
-			string fn = filename.substr(0, filename.find("."));
-			string ext = filename.substr(filename.find(".") + 1, filename.size() - (filename.find(".") + 1));
+			string fn = filename.substr(0, filename.find_last_of("."));
+			string ext = filename.substr(filename.find_last_of(".") + 1, filename.size() - (filename.find_last_of(".") + 1));
 
 			if (!loadChannelsFromFile(fn + "_1." + ext, Red)) {
 				return;
@@ -605,8 +605,8 @@ public:
 
 		if (count == Three) {
 
-			string fn = filename.substr(0, filename.find("."));
-			string ext = filename.substr(filename.find(".") + 1, filename.size() - (filename.find(".") + 1));
+			string fn = filename.substr(0, filename.find_last_of("."));
+			string ext = filename.substr(filename.find_last_of(".") + 1, filename.size() - (filename.find_last_of(".") + 1));
 
 			if (!writeChannels(fn + "_1." + ext, Red)) {
 				return;
