@@ -424,12 +424,10 @@ public:
 			return false;
 		}
 
-		if ((width == 0) && (height == 0)) {
-			width = w;
-			height = h;
-		}
 
 		if ((ch == All) || (ch == Red)) {
+			width = w;
+			height = h;
 			m = pnmMatrix(h, vector<baseColor*>(w, nullptr));
 			for (int i = 0; i < height; i++) {
 				for (int j = 0; j < width; j++) {
@@ -647,7 +645,7 @@ public:
 			for (int j = 0; j < height; j++) {
 				for (int i = 0; i < width; i++) {
 
-					unsigned char t;
+					unsigned char t = 0;
 					switch (ch) {
 					case Red:
 						t = double(m[j][i]->red * channelDepth);
@@ -688,9 +686,9 @@ public:
 		}
 
 		fclose(file);
+		return true;
 
 	}
-
 
 
 };
