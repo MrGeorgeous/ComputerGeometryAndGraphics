@@ -24,6 +24,44 @@ using namespace std;
 
 const int UCHAR_SIZE = sizeof(unsigned char);
 
+typedef vector<vector<double>> matrix;
+
+matrix matrixYCbCr601 = { {-100,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0} };
+matrix revMatrixYCbCr601 = { {-100,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0} };
+matrix matrixYCbCr709 = { {-100,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0} };
+matrix revMatrixYCbCr709 = { {-100,0.0,0.0},{0.0,0.0,0.0},{0.0,0.0,0.0} };
+
+matrix matrixYCoCg = { {1.0/4,1.0/2,1.0/4},{1.0/2,0,-1.0/2},{-1.0/4,1.0/2,-1.0/4} };
+matrix revMatrixYCoCg = { {1,1,-1},{1,0,1},{1,-1,-1} };
+
+void fillYCbCr(matrix& m, double a, double b, double c) {
+	// a - K_r, b - K_g, c - K_b
+	m[0][0] = a;
+	m[0][1] = b;
+	m[0][2] = c;
+	m[1][0] = -0.5 * a / (1.0 - c);
+	m[1][1] = -0.5 * b / (1.0 - c);
+	m[1][2] = 0.5;
+	m[2][0] = 0.5;
+	m[2][1] = -0.5 * b / (1.0 - a);
+	m[2][2] = -0.5 * c / (1.0 - a);
+}
+
+void fillRevYCbCr(matrix& m, double a, double b, double c) {
+	// a - K_r, b - K_g, c - K_b
+	m[0][0] = 1.0;
+	m[0][1] = 0;
+	m[0][2] = 2.0 - 2.0 * a;
+	m[1][0] = 1.0;
+	m[1][1] = -c / b * (2.0 - 2.0 * c);
+	m[1][2] = -a / b * (2.0 - 2.0 * a);
+	m[2][0] = 1.0;
+	m[2][1] = 2.0 - 2.0 * c;
+	m[2][2] = 0;
+}
+
+
+
 class baseColor {
 
 public:
@@ -46,7 +84,7 @@ public:
 
 	}
 
-	static float HueToRGB(float v1, float v2, float vH) {
+	static double HueToRGB(double v1, double v2, double vH) {
 		if (vH < 0)
 			vH += 1;
 
@@ -67,7 +105,7 @@ public:
 
 	void fromHSLToRGB() {
 
-		double H = this->red  * 360.0;
+		double H = this->red;
 		double S = this->green ;
 		double L = this->blue ;
 
@@ -76,17 +114,19 @@ public:
 		double b = 0;
 
 		if (S == 0){
-			r = g = b = (L * 255.0);
+			r = L;
+			g = L;
+			b = L;
 		} else {
 			double v1, v2;
-			double hue = (float)H / 360.0;
+			double hue = H;
 
 			v2 = (L < 0.5) ? (L * (1 + S)) : ((L + S) - (L * S));
 			v1 = 2 * L - v2;
 
-			r = HueToRGB(v1, v2, hue + (1.0f / 3));
+			r = HueToRGB(v1, v2, hue + (1.0 / 3));
 			g = HueToRGB(v1, v2, hue);
-			b = HueToRGB(v1, v2, hue - (1.0f / 3));
+			b = HueToRGB(v1, v2, hue - (1.0 / 3));
 		}
 
 		this->red = r ;
@@ -126,7 +166,7 @@ public:
 			h /= 6;
 		}
 
-		this->red = h / 360;
+		this->red = h;
 		this->green = s ;
 		this->blue = l ;
 
@@ -145,10 +185,10 @@ public:
 		double fG = 0;
 		double fB = 0;
 
-		float fC = fV * fS;
-		float fHPrime = fmod(fH / 60.0, 6);
-		float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
-		float fM = fV - fC;
+		double fC = fV * fS;
+		double fHPrime = fmod(fH / 60.0, 6);
+		double fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
+		double fM = fV - fC;
 
 		if (0 <= fHPrime && fHPrime < 1) {
 			fR = fC;
@@ -206,9 +246,9 @@ public:
 		double fG = green;
 		double fB = blue;
 
-		float fCMax = max(max(fR, fG), fB);
-		float fCMin = min(min(fR, fG), fB);
-		float fDelta = fCMax - fCMin;
+		double fCMax = max(max(fR, fG), fB);
+		double fCMin = min(min(fR, fG), fB);
+		double fDelta = fCMax - fCMin;
 
 		if (fDelta > 0) {
 			if (fCMax == fR) {
@@ -260,69 +300,53 @@ public:
 	}
 
 	void fromRGBtoYCbCr601() {
-		float fr = this->red;
-		float fg = this->green;
-		float fb = this->blue;
-
-		float Y = (float)(0.2989 * fr + 0.5866 * fg + 0.1145 * fb);
-		float Cb = (float)(-0.1687 * fr - 0.3313 * fg + 0.5000 * fb);
-		float Cr = (float)(0.5000 * fr - 0.4184 * fg - 0.0816 * fb);
-
-		this->red = Y;
-		this->green = Cb;
-		this->blue = Cr;
+		matrixMultiply(matrixYCbCr601);
+		this->green += 0.5;
+		this->blue += 0.5;
 	}
 
 	void fromYCbCr601toRGB(){
-		float r = max(0.0f, min(1.0f, (float)(this->red  + 0.0000 * this->green  + 1.4022 * this->blue)));
-		float g = max(0.0f, min(1.0f, (float)(this->red  - 0.3456 * this->green  - 0.7145 * this->blue)));
-		float b = max(0.0f, min(1.0f, (float)(this->red  + 1.7710 * this->green  + 0.0000 * this->blue)));
-
-		this->red = r ;
-		this->green = g ;
-		this->blue = b;
+		this->green -= 0.5;
+		this->blue -= 0.5;
+		matrixMultiply(revMatrixYCbCr601);
 	}
 
 	void fromRGBtoYCbCr709() {
-		float fr = this->red;
-		float fg = this->green;
-		float fb = this->blue;
-
-		float Y = (float)(0.2126 * fr + 0.7152 * fg + 0.0722 * fb);
-		float Cb = (float)(-0.9991 * fr - 0.33609 * fg + 0.436 * fb);
-		float Cr = (float)(0.615 * fr - 0.55861 * fg - 0.05639 * fb);
-
-		this->red = Y ;
-		this->green = Cb;
-		this->blue = Cr;
+		matrixMultiply(matrixYCbCr709);
+		this->green += 0.5;
+		this->blue += 0.5;
 	}
 
 	void fromYCbCr709toRGB() {
-		float r = max(0.0f, min(1.0f, (float)(this->red  + 0.0000 * this->green + 1.28033 * this->blue )));
-		float g = max(0.0f, min(1.0f, (float)(this->red - 0.21482 * this->green -0.38059 * this->blue )));
-		float b = max(0.0f, min(1.0f, (float)(this->red + 2.12798 * this->green  + 0.0000 * this->blue )));
-
-		this->red = r ;
-		this->green = g;
-		this->blue = b;
+		this->green -= 0.5;
+		this->blue -= 0.5;
+		matrixMultiply(revMatrixYCbCr709);
 	}
 
 	void fromRGBtoYCoCg() {
-		
-		double r = this->red / 4 + this->green / 2 + this->blue / 4;
-		double g = this->red / 2 + this->green * 0 - this->blue / 2;
-		double b = - this->red / 4 + this->green / 2 - this->blue / 4;
-
-		this->red = r;
-		this->green = g;
-		this->blue = b;
+		matrixMultiply(matrixYCoCg);
+		this->green += 0.5;
+		this->blue += 0.5;
 	}
 
 	void fromYCoCgtoRGB() {
+		this->green -= 0.5;
+		this->blue -= 0.5;
+		matrixMultiply(revMatrixYCoCg);
+	}
 
-		double r = this->red + this->green - this->blue;
-		double g = this->red + this->green * 0 + this->blue;
-		double b = this->red - this->green - this->blue;
+	void matrixMultiply(matrix & m) {
+		if (m[0][0] == -100) {
+			cout << "Fatality.";
+		}
+
+		double r = m[0][0] * this->red + m[0][1] * this->green + m[0][2] * this->blue;
+		double g = m[1][0] * this->red + m[1][1] * this->green + m[1][2] * this->blue;
+		double b = m[2][0] * this->red + m[2][1] * this->green + m[2][2] * this->blue;
+
+		/*this->red = max(0.0, min(1.0, r));
+		this->green = max(0.0, min(1.0, g));
+		this->blue = max(0.0, min(1.0, b));*/
 
 		this->red = r;
 		this->green = g;
@@ -533,6 +557,12 @@ public:
 			return;
 		}
 
+		fillRevYCbCr(revMatrixYCbCr601, 0.299, 0.587, 0.114);
+		fillRevYCbCr(revMatrixYCbCr709, 0.0722, 0.2126, 0.7152);
+
+		fillYCbCr(matrixYCbCr601, 0.299, 0.587, 0.114);
+		fillYCbCr(matrixYCbCr709, 0.0722, 0.2126, 0.7152);
+
 		for (int j = 0; j < height; j++) {
 			for (int i = 0; i < width; i++) {
 
@@ -648,15 +678,27 @@ public:
 					unsigned char t = 0;
 					switch (ch) {
 					case Red:
-						t = double(m[j][i]->red * channelDepth);
+						t = double(max(0.0, min(1.0, m[j][i]->red)) * channelDepth);
 						break;
 					case Green:
-						t = double(m[j][i]->green * channelDepth);
+						t = double(max(0.0, min(1.0, m[j][i]->green)) * channelDepth);
 						break;
 					case Blue:
-						t = double(m[j][i]->blue  * channelDepth);
+						t = double(max(0.0, min(1.0, m[j][i]->blue)) * channelDepth);
 						break;
 					}
+
+					//switch (ch) {
+					//case Red:
+					//	t = double(m[j][i]->red * channelDepth);
+					//	break;
+					//case Green:
+					//	t = double(m[j][i]->green * channelDepth);
+					//	break;
+					//case Blue:
+					//	t = double(m[j][i]->blue * channelDepth);
+					//	break;
+					//}
 
 					fwrite(&t, sizeof(unsigned char), 1, file);
 
@@ -672,9 +714,13 @@ public:
 			for (int j = 0; j < height; j++) {
 				for (int i = 0; i < width; i++) {
 
-					unsigned char r = m[j][i]->red * channelDepth;
-					unsigned char g = m[j][i]->green * channelDepth;
-					unsigned char b = m[j][i]->blue * channelDepth;
+					unsigned char r = max(0.0, min(1.0, m[j][i]->red)) * channelDepth;
+					unsigned char g = max(0.0, min(1.0, m[j][i]->green)) * channelDepth;
+					unsigned char b = max(0.0, min(1.0, m[j][i]->blue)) * channelDepth;
+
+					//unsigned char r = m[j][i]->red * channelDepth;
+					//unsigned char g = m[j][i]->green * channelDepth;
+					//unsigned char b = m[j][i]->blue * channelDepth;
 
 					fwrite(&r, sizeof(unsigned char), 1, file);
 					fwrite(&g, sizeof(unsigned char), 1, file);
@@ -789,6 +835,7 @@ int main(int argc, char* argv[]) {
 	// TEST ALL MODES
 	//string name = "west_1";
 	//string toname = "test/im";
+	//string revname = "output/im";
 
 	//for (int i = RGB; i != NO_PALETTE; i++) {
 	//	for (int j = RGB; j != NO_PALETTE; j++) {
@@ -805,6 +852,19 @@ int main(int argc, char* argv[]) {
 
 	//		baseImage d(name + ".ppm", static_cast<palette>(i), files::Three);
 	//		d.print(lol + "_3to3.ppm", static_cast<palette>(j), files::Three);
+
+	//	}
+	//}
+
+
+	//for (int i = RGB; i != NO_PALETTE; i++) {
+	//	for (int j = RGB; j != NO_PALETTE; j++) {
+
+	//		string lol1 = toname + "_" + to_string(i) + "_" + to_string(j);
+	//		string lol2 = revname + "_" + to_string(i) + "_" + to_string(j);
+	//		baseImage a(lol1 + "_1to1.ppm", static_cast<palette>(j), files::One);
+	//		a.print(lol2 + "_1to1.ppm", static_cast<palette>(i), files::One);
+
 
 	//	}
 	//}
