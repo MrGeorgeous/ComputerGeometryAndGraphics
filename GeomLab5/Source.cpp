@@ -433,20 +433,32 @@ public:
 					min_r = min(min_r, m[j][i]->red);
 					max_r = max(max_r, m[j][i]->red);
 
-					if (!bw) {
+				}
+			}
+
+			if (!bw) {
+				for (int j = 0; j < height; j++) {
+					for (int i = 0; i < width; i++) {
+
 						min_g = min(min_g, m[j][i]->green);
 						max_g = max(max_g, m[j][i]->green);
 						min_b = min(min_b, m[j][i]->blue);
 						max_b = max(max_b, m[j][i]->blue);
-					}
 
+					}
 				}
 			}
 
-			processDeltaMtlprRed(min_r, 255.0 / (max_r - min_r));
-			processDeltaMtlprGreen(min_g, 255.0 / (max_g - min_g));
-			processDeltaMtlprBlue(min_b, 255.0 / (max_b - min_b));
+			if (!bw) {
+				int min_ch = min(min_r, min(min_g, min_b));
+				int max_ch = max(max_r, max(max_g, max_b));
+				processDeltaMtlpr(min_ch, 255.0 / (max_ch - min_ch));
+				cout << min_ch << " " << std::setprecision(3) << 255.0 / (max_ch - min_ch) << "\n";
 
+			} else {
+				processDeltaMtlpr(min_r, 255.0 / (max_r - min_r));
+				cout << min_r << " " << std::setprecision(3) << 255.0 / (max_r - min_r) << "\n";
+			}
 
 		}
 
@@ -466,6 +478,8 @@ public:
 			}
 
 			processDeltaMtlprRed(min_r, 255.0 / (max_r - min_r));
+
+			cout << min_r << " " << std::setprecision(3) << 255.0 / (max_r - min_r) << "\n";
 
 			YCbCrtoRGB();
 
@@ -489,23 +503,46 @@ public:
 
 					count_r[(unsigned char)(m[j][i]->red)]++;
 
-					if (!bw) {
-						count_g[(unsigned char)(m[j][i]->green)]++;
-						count_b[(unsigned char)(m[j][i]->blue)]++;
-					}
-
 				}
 			}
 
-			auto limits_r = getLimits(count_r);
-			auto limits_g = getLimits(count_g);
-			auto limits_b = getLimits(count_b);
+			if (!bw) {
+				for (int j = 0; j < height; j++) {
+					for (int i = 0; i < width; i++) {
+						count_g[(unsigned char)(m[j][i]->green)]++;
+						count_b[(unsigned char)(m[j][i]->blue)]++;
+					}
+				}
+			}
 
+			if (!bw) {
 
+				auto limits_r = getLimits(count_r);
+				auto limits_g = getLimits(count_g);
+				auto limits_b = getLimits(count_b);
 
-			processDeltaMtlprRed(limits_r.first, 255.0 / (limits_r.second - limits_r.first));
-			processDeltaMtlprGreen(limits_g.first, 255.0 / (limits_g.second - limits_g.first));
-			processDeltaMtlprBlue(limits_b.first, 255.0 / (limits_b.second - limits_b.first));
+				int min_ch = min(limits_r.first, min(limits_g.first, limits_b.first));
+				int max_ch = max(limits_r.second, max(limits_g.second, limits_b.second));
+
+				processDeltaMtlprRed(min_ch, 255.0 / (max_ch - min_ch));
+				processDeltaMtlprGreen(min_ch, 255.0 / (max_ch - min_ch));
+				processDeltaMtlprBlue(min_ch, 255.0 / (max_ch - min_ch));
+
+				cout << min_ch << " " << std::setprecision(3) << 255.0 / (max_ch - min_ch) << "\n";
+
+			} else {
+
+				auto limits_r = getLimits(count_r);
+
+				int min_ch = limits_r.first;
+				int max_ch = limits_r.second;
+
+				processDeltaMtlprRed(min_ch, 255.0 / (max_ch - min_ch));
+
+				cout << min_ch << " " << std::setprecision(3) << 255.0 / (max_ch - min_ch) << "\n";
+
+			}
+
 
 
 		}
@@ -530,6 +567,8 @@ public:
 			auto limits_r = getLimits(count_r);
 
 			processDeltaMtlprRed(limits_r.first, 255.0 / (limits_r.second - limits_r.first));
+
+			cout << limits_r.first << " " << std::setprecision(3) << 255.0 / (limits_r.second - limits_r.first) << "\n";
 
 			YCbCrtoRGB();
 
@@ -584,6 +623,16 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
+	//for (size_t i = 0; i < 6; i++) {
+	//	baseImage im(in);
+	//	im.processLightness(i, delta, mltpr);
+	//	im.writeChannels(to_string(i) + out);
+	//	if (!im.errorEncounter.empty()) {
+	//		cerr << "Some errors encountered.";
+	//		return 1;
+	//	}
+	//}
+
 	size_t i = operation;
 	/*for (size_t i = 0; i < 6; i++) {*/
 		baseImage im(in);
@@ -594,6 +643,8 @@ int main(int argc, char* argv[]) {
 			return 1;
 		}
 	//}
+
+
 
 
 	return 0;
