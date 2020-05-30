@@ -237,6 +237,9 @@ public:
 					}
 
 					m[j][i]->red = double(t);
+					m[j][i]->green = double(t);
+					m[j][i]->blue = double(t);
+
 					
 				}
 
