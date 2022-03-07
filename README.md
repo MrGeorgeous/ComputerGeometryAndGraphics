@@ -1,11 +1,13 @@
-# ComputerGeometryAndGraphics
+# Computer Geometry & Graphics
 
-### [Лабораторная работа №1. Изучение простых преобразований изображений](GeomLab1/)
+The following project was conducted during the 'Computer Geometry & Graphics' 2019 university course
 
-### [Лабораторная работа №2. Изучение алгоритмов отрисовки растровых линий с применением сглаживания и гамма-коррекции (частичное)](GeomLab2/) 
+### [Lab #1. Learning simple image transformations](GeomLab1/)
 
-### [Лабораторная работа №3. Изучение алгоритмов псевдотонирования изображений ](GeomLab3/GeomLab3/) 
+### [Lab #2. Learning algorithms for drawing raster lines using anti-aliasing and gamma correction (partial)](GeomLab2/)
 
-### [Лабораторная работа №4. Изучение цветовых пространств ](GeomLab4/) 
+### [Lab #3. Study of image pseudo-toning algorithms ](GeomLab3/GeomLab3/)
 
-### [Лабораторная работа №5. Изучение алгоритма настройки автояркости изображения ](GeomLab5/) 
+### [Lab #4. Exploring Color Spaces ](GeomLab4/)
+
+### [Lab #5. Studying the image auto-brightness adjustment algorithm ](GeomLab5/)
